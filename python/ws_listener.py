@@ -80,9 +80,10 @@ class WSClient():
                 await asyncio.sleep(self.sleep_time)
                 continue
             except ConnectionRefusedError:
-                logger.debug('Nobody seems to listen to this URL')
-                logger.debug('Exiting...')
-                break
+                logger.debug('Nobody seems to listen to this endpoint. Please check the URL.')
+                logger.debug('Retrying connection in {} sec (Ctrl-C to quit)'.format(self.sleep_time))
+                await asyncio.sleep(self.sleep_time)
+                continue
 
 
 def start_ws_client(client):

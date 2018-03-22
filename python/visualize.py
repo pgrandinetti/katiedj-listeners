@@ -8,6 +8,7 @@ import logging
 import time
 import threading
 import sqlite3
+import argparse
 from pathlib import Path
 #import requests
 
@@ -36,8 +37,9 @@ class DataObj():
         afile = Path(self.storage)
         if afile.exists():
             logger.debug('Found existing storage')
-            val = input('This storage already exists.\n' + \
-                        'Enter 1 to continue (previous data will be lost if the format is different).\n' + \
+            val = input('This storage already exists.\n' +\
+                        'Enter 1 to continue (previous data ' +\
+                        'will be lost if they are not consistent).\n' +\
                         'Enter other key to exit > ')
             if not val == '1':
                 return
@@ -46,22 +48,30 @@ class DataObj():
     def __init_storage(self):
         if self.storage is None:
             return
-        conn = sqlite3.connect(self.storage)
+        try:
+            conn = sqlite3.connect(self.storage)
+        except:
+            logger.warning('Error while connecting to the storage.')
+            return
         try:
             c = conn.execute('PRAGMA table_info("history")')
         except:
-            # table does not exists
             conn.close()
-            c = self.__create_history_table()
+            c = self.__drop_and_create()
             return
         res = c.fetchall()
         conn.close()
+        if not res:
+            # table does not exists
+            logger.debug('Did not find history table')
+            c = self.__create_history_table()
+            return
         logger.debug('Found existing history table')
         must_match = {x for x in self.lines.keys()}
         for row in res:
             if row[0] == 0:
                 if not row[1] == '_id' or \
-                   not row[2] == 'INTEGER':
+                   not row[2] == 'integer':
                     logger.debug('_id does not match')
                     return self.__drop_and_create()
             elif row[0] == 1:
@@ -82,44 +92,83 @@ class DataObj():
             logger.debug('Roads ID do not match')
             return self.__drop_and_create()
         logger.debug('Existing history table is OK')
+        return True
 
     def __drop_and_create(self):
-        conn = sqlite3.connect(self.storage)
-        drop_cmd = 'DROP TABLE history;'
+        try:
+            conn = sqlite3.connect(self.storage)
+        except:
+            logger.warning('Error while connecting to the storage.')
+            return False
+        drop_cmd = 'DROP TABLE IF EXISTS history;'
         logger.debug('Dropping existing history table...')
-        c = conn.execute(drop_cmd)
-        conn.commit()
+        try:
+            c = conn.execute(drop_cmd)
+            conn.commit()
+        except Exception as e:
+            logger.warning('Cannot drop table')
+            logger.warning(str(e))
+            return False
         conn.close()
         return self.__create_history_table()
 
     def __create_history_table(self):
-        conn = sqlite3.connect(self.storage)
+        try:
+            conn = sqlite3.connect(self.storage)
+        except:
+            logger.warning('Error while connecting to the storage.')
+            return False
         logger.debug('Creating new history table...')
         sql = "CREATE TABLE IF NOT EXISTS history( " +\
               "_id integer primary key autoincrement, " +\
-              "clock timestamp," +\
+              "clock timestamp unique," +\
               ",".join([" '{}' real "] * len(self.lines)) + ");"
-        c = conn.execute(sql.format(*(x for x in self.lines.keys())))
-        conn.commit()
+        try:
+            c = conn.execute(sql.format(*(x for x in self.lines.keys())))
+            conn.commit()
+        except Exception as e:
+            logger.warning(str(e))
+            return False
         conn.close()
-        return c
+        return True
 
-    '''
-    def __store_sample(self, data):
+    def __store_sample(self, state, timestamp):
         if self.storage is None:
-            return
-        conn = sqlite3.connect(self.storage)
-        c = conn.cursor()
-        sql = "INSERT INTO hystory VALUES (" +\
-              "NULL,
-   '''
+            return False
+        if not len(state) == len(self.lines):
+            logger.warning('Trying to store a bad state: Skipped.')
+            return False
+        try:
+            conn = sqlite3.connect(self.storage)
+        except Exception as e:
+            logger.warning('Error while connecting to the storage.')
+            logger.warning(str(e))
+            return False
+        sql = 'INSERT INTO history VALUES (' +\
+              'NULL, "{}",' + ','.join([' {}'] * len(self.lines)) + ');'
+        values = [v for k,v in sorted(state.items())]
+        try:
+            c = conn.execute(sql.format(timestamp, *values))
+            conn.commit()
+        except Exception as e:
+            logger.warning('Cannot save to storage the new data')
+            logger.warning(str(e))
+            conn.close()
+            return False
+        conn.close()
+        return True
 
     def notify(self, notifier, message):
-        logger.debug('DataObj notified with message > {}'.format(message))
+        logger.debug('Message is > {}'.format(message))
         try:
-            body = json.loads(message)
-            body = body['state']
+            msg = json.loads(message)
+            body = msg['state']
+            timestamp = msg['timestamp']
         except:
+            logger.debug('Message discarded due to the format')
+            return
+        if not len(body) == len(self.lines):
+            logger.warning('Trying to store a bad state: Skipped.')
             return
         for k in self.lines:
             self.lines[k].append(body[str(k)])
@@ -127,10 +176,19 @@ class DataObj():
             self.xdata.append(self.xdata[-1] + 1)
         except:
             self.xdata.append(0)
+        self.__store_sample(body, timestamp)
 
 
 if __name__ == '__main__':
-    data_store = DataObj()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-s', '--storage',
+                        action='store',
+                        required=False,
+                        dest='storage',
+                        default=None,
+                        help='Path to storage file (sqlite)')
+    args = parser.parse_args()
+    data_store = DataObj(storage=args.storage)
     arguments = {'ping_timeout': 5,
                  'reply_timeout': 10,
                  'sleep_time': 5}
