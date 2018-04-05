@@ -37,9 +37,9 @@ class DataObj():
         afile = Path(self.storage)
         if afile.exists():
             logger.debug('Found existing storage')
-            val = input('This storage already exists.\n' +\
-                        'Enter 1 to continue (previous data ' +\
-                        'will be lost if they are not consistent).\n' +\
+            val = input('This storage already exists.\n'
+                        'Enter 1 to continue (previous data '
+                        'will be lost if they are not consistent).\n'
                         'Enter other key to exit > ')
             if not val == '1':
                 return
@@ -48,10 +48,8 @@ class DataObj():
     def __init_storage(self):
         if self.storage is None:
             return
-        try:
-            conn = sqlite3.connect(self.storage)
-        except:
-            logger.warning('Error while connecting to the storage.')
+        conn = self.create_connection()
+        if conn is None:
             return
         try:
             c = conn.execute('PRAGMA table_info("history")')
@@ -67,7 +65,7 @@ class DataObj():
             c = self.__create_history_table()
             return
         logger.debug('Found existing history table')
-        must_match = {x for x in self.lines.keys()}
+        must_match = set(self.lines.keys())
         for row in res:
             if row[0] == 0:
                 if not row[1] == '_id' or \
@@ -95,10 +93,8 @@ class DataObj():
         return True
 
     def __drop_and_create(self):
-        try:
-            conn = sqlite3.connect(self.storage)
-        except:
-            logger.warning('Error while connecting to the storage.')
+        conn = self.create_connection()
+        if conn is None:
             return False
         drop_cmd = 'DROP TABLE IF EXISTS history;'
         logger.debug('Dropping existing history table...')
@@ -109,14 +105,13 @@ class DataObj():
             logger.warning('Cannot drop table')
             logger.warning(str(e))
             return False
-        conn.close()
+        finally:
+            conn.close()
         return self.__create_history_table()
 
     def __create_history_table(self):
-        try:
-            conn = sqlite3.connect(self.storage)
-        except:
-            logger.warning('Error while connecting to the storage.')
+        conn = self.create_connection()
+        if conn is None:
             return False
         logger.debug('Creating new history table...')
         sql = "CREATE TABLE IF NOT EXISTS history( " +\
@@ -124,12 +119,15 @@ class DataObj():
               "clock timestamp unique," +\
               ",".join([" '{}' real "] * len(self.lines)) + ");"
         try:
-            c = conn.execute(sql.format(*(x for x in self.lines.keys())))
+            c = conn.execute(
+                sql.format(*(list(self.lines.keys())))
+            )
             conn.commit()
         except Exception as e:
             logger.warning(str(e))
             return False
-        conn.close()
+        finally:
+            conn.close()
         return True
 
     def __store_sample(self, state, timestamp):
@@ -138,11 +136,8 @@ class DataObj():
         if not len(state) == len(self.lines):
             logger.warning('Trying to store a bad state: Skipped.')
             return False
-        try:
-            conn = sqlite3.connect(self.storage)
-        except Exception as e:
-            logger.warning('Error while connecting to the storage.')
-            logger.warning(str(e))
+        conn = self.create_connection()
+        if conn is None:
             return False
         sql = 'INSERT INTO history VALUES (' +\
               'NULL, "{}",' + ','.join([' {}'] * len(self.lines)) + ');'
@@ -157,6 +152,15 @@ class DataObj():
             return False
         conn.close()
         return True
+
+    def create_connection(self):
+        try:
+            conn = sqlite3.connect(self.storage)
+            return conn
+        except Exception as e:
+            logger.warning('Error while connecting to the storage.')
+            logger.warning(str(e))
+            return None
 
     def notify(self, notifier, message):
         logger.debug('Message is > {}'.format(message))
@@ -212,6 +216,8 @@ if __name__ == '__main__':
     time.sleep(5)
     while True:
         time.sleep(10)
+        if not any(len(x) > 0 for x in data_store.lines.values()):
+            continue
         try:
             xmax = data_store.xdata[-1] + 5
         except:

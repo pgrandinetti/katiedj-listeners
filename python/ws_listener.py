@@ -20,18 +20,9 @@ class WSClient():
     def __init__(self, url, **kwargs):
         self.url = url
         self.observer = []
-        try:
-            self.reply_timeout = kwargs['reply_timeout']
-        except:
-            self.reply_timeout = 10
-        try:
-            self.ping_timeout = kwargs['ping_timeout']
-        except:
-            self.ping_timeout = 5
-        try:
-            self.sleep_time = kwargs['sleep_time']
-        except:
-            self.sleep_time = 5
+        self.reply_timeout = kwargs.get('reply_timeout', 10)
+        self.ping_timeout = kwargs.get('ping_timeout', 5)
+        self.sleep_time = kwargs.get('sleep_time', 5)
 
     def register(self, obs):
         if not hasattr(obs, 'notify'):
@@ -115,4 +106,8 @@ if __name__ == '__main__':
     wst.daemon = True
     wst.start()
     while True:
-        time.sleep(1)
+        try:
+            time.sleep(1)
+        except KeyboardInterrupt:
+            logger.info('Exiting...')
+            sys.exit(0)
