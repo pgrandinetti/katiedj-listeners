@@ -1,16 +1,10 @@
-import matplotlib.pyplot as plt
-import seaborn
 import params
-import json
-import numpy
-import ws_listener
-import logging
-import time
-import threading
+
 import sqlite3
-import argparse
+import logging
+import json
 from pathlib import Path
-#import requests
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -20,14 +14,10 @@ formatter = logging.Formatter(
 streamHandler.setFormatter(formatter)
 logger.addHandler(streamHandler)
 
-class DataObj():
+
+class DataObj:
 
     def __init__(self, storage=None):
-        # Query the server to get the num of roads
-        #endpoint = params.URL
-        #resp = requests.get(
-        #        endpoint + '/api/macro/sample/info')
-        #numLines = resp->numLines
         numLines = params.sample_net['numLines']
         self.lines = {k: [] for k in range(numLines)}
         self.xdata = []
@@ -148,9 +138,9 @@ class DataObj():
         except Exception as e:
             logger.warning('Cannot save to storage the new data')
             logger.warning(str(e))
-            conn.close()
             return False
-        conn.close()
+        finally:
+            conn.close()
         return True
 
     def create_connection(self):
@@ -181,51 +171,3 @@ class DataObj():
         except:
             self.xdata.append(0)
         self.__store_sample(body, timestamp)
-
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-s', '--storage',
-                        action='store',
-                        required=False,
-                        dest='storage',
-                        default=None,
-                        help='Path to storage file (sqlite)')
-    args = parser.parse_args()
-    data_store = DataObj(storage=args.storage)
-    arguments = {'ping_timeout': 5,
-                 'reply_timeout': 10,
-                 'sleep_time': 5}
-    client = ws_listener.WSClient(
-                    params.URL, **arguments)
-    client.register(data_store)
-    wst = threading.Thread(
-        target=ws_listener.start_ws_client, args=(client,))
-    wst.daemon = True
-    wst.start()
-    plt.ion()
-    seaborn.set()
-    axes = plt.gca()
-    axes.set_xlabel('Time [steps from start]')
-    axes.set_ylabel('Veh.')
-    lines2D = {}
-    for k in data_store.lines:
-        lines2D[k] = axes.plot([], [], label=k)[0]
-    plt.legend(loc='upper center', bbox_to_anchor=(0.5, 1.05),
-          ncol=4, fancybox=True, shadow=True, frameon=True)
-    time.sleep(5)
-    while True:
-        time.sleep(10)
-        if not any(len(x) > 0 for x in data_store.lines.values()):
-            continue
-        try:
-            xmax = data_store.xdata[-1] + 5
-        except:
-            xmax = 5
-        ymax = max([x for l in data_store.lines.values() for x in l]) + 5
-        axes.set_xlim(0, xmax)
-        axes.set_ylim(0, ymax)
-        for k in lines2D:
-            lines2D[k].set_data(
-                data_store.xdata, data_store.lines[k])
-        plt.pause(0.01)
