@@ -7,12 +7,6 @@ import threading
 from os import environ
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-streamHandler = logging.StreamHandler()
-formatter = logging.Formatter(
-    '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-streamHandler.setFormatter(formatter)
-logger.addHandler(streamHandler)
 
 
 class WSClient():
@@ -81,33 +75,3 @@ def start_ws_client(client):
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     loop.run_until_complete(client.listen_forever())
-
-
-class A():
-    # a short example of observer object
-    def __init__(self, idx=None):
-        self.idx = idx
-
-    def notify(self, notifier, message):
-        print('A {}, got message {}'.format(self.idx, message))
-
-
-# Run it as standalone
-if __name__ == '__main__':
-    url = "ws://127.0.0.1:8000/macro/sample/"
-    params = {'ping_timeout': 5,
-              'reply_timeout': 10,
-              'sleep_time': 5}
-    client = WSClient(url, **params)
-    a = A(idx=int(time.time()))
-    client.register(a)
-    wst = threading.Thread(
-        target=start_ws_client, args=(client,))
-    wst.daemon = True
-    wst.start()
-    while True:
-        try:
-            time.sleep(1)
-        except KeyboardInterrupt:
-            logger.info('Exiting...')
-            sys.exit(0)

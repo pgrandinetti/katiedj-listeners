@@ -7,12 +7,6 @@ from pathlib import Path
 
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-streamHandler = logging.StreamHandler()
-formatter = logging.Formatter(
-    '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-streamHandler.setFormatter(formatter)
-logger.addHandler(streamHandler)
 
 
 class DataObj:
