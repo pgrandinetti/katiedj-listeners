@@ -1,5 +1,5 @@
-Katie DJ -- Software listenesrs
-===============================
+Katie DJ -- Software listeners
+==============================
 
 [http://katiedj.com](http://katiedj.com)
 
@@ -21,7 +21,7 @@ Please refer to the Frequently Asked Questions at [http://www.katiedj.com/#faq](
 
 ## Download the data
 
-We release open-source clients that handles connection and data download from Katie DJ. You are not forced to use our clients (you can write your own), but using ours should save you time. We plan on releasing clients for the most common "scientific" programming language. At the time of this writing, only the Python3 client has been released.
+We release open-source clients that handle connection and data download from Katie DJ. You are not forced to use our clients (you can write your own), but using ours should save you time. We plan on releasing clients for the most common "scientific" programming languages. At the time of this writing, only the Python3 client has been released.
 
 ## Contributing
 

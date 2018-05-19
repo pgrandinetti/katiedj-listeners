@@ -1,7 +1,7 @@
 Katie DJ - Python listener
 ==========================
 
-This folder contains the Python client for listening to the data brodcast from (Katie DJ)[http://katiedj.com]. To run the client, make sure you have Python >= 3.5 and follow the below procedure. We recommend to have the Python 3.5 (or 3.6) executable installed into a virtual environment.
+This folder contains the Python client for listening to the data brodcast from [Katie DJ](http://katiedj.com). To run the client, make sure you have Python >= 3.5 and follow the below procedure. We recommend to have the Python 3.5 (or 3.6) executable installed into a virtual environment.
 
 
 ## How to run the client
@@ -19,7 +19,9 @@ The client will show to you the historical time series of the streamed data, sta
 
 It is possible to save the data in a local SQLite database. Let's say you want to store data into a database located at `/home/yourname/katiedj.db`, then at step 4 run instead
 
-  4. `python app.py -s /home/yourname/katiedj.db`
+```
+python app.py -s /home/yourname/katiedj.db
+```
 
 If you stop the client and later want to restart it, then you can simply pass the same database as storage option, and you will see the following message
 
