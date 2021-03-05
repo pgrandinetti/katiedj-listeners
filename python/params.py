@@ -1,6 +1,6 @@
 address = 'katiedj.com'
 # address = '127.0.0.1'
-port = '8080'
+port = '80'
 endpoint = '/macro/sample/'
 URL = 'ws://' + address + ':' + port + endpoint
 
