@@ -1,6 +1,8 @@
 Katie DJ -- Software listeners
 ==============================
 
+### **Note**: The websocket server at ws://katiedj.com is not active anymore. Contact me if you want a backup of the database.
+
 [http://katiedj.com](http://katiedj.com)
 
 This repository contains the source code for the software listeners that can be used to retrieve data for free from the brodcast at [http://katiedj.com](http://katiedj.com). The code in this repository is released under the MIT license. You should have received a copy of the license along with the code; if not, then please visit the official license page [https://opensource.org/licenses/MIT](https://opensource.org/licenses/MIT).
